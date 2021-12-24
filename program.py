@@ -177,9 +177,6 @@ class Semester:
 		cost_treshold: float = None,
 		degree_treshold: Iterable[str] = None): # selection based on a diff treshold for each course.
 
-		from courses import COURSES 
-		degree_treshold = degree_treshold if degree_treshold else []
-
 		def n_recommender(iterable, prop, func):
 			return func([x.__dict__[prop] for x in iterable])
 
@@ -207,6 +204,8 @@ class Semester:
 				if f[1]:
 					initial = func(initial, f[0], f[1], *args, **kwargs)
 
+		from courses import COURSES 
+		degree_treshold = degree_treshold if degree_treshold else []
 		current_courses = self.courses # IMPLEMENT: COURSES should be equal to the courses that exist in the DB with their own parameters.
 							 # recommendation based on past courses and more.
 		# n_points & n_musts filter
