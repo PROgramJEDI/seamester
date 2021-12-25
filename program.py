@@ -58,8 +58,8 @@ class Course(Base):
 	took = Column(Boolean)
 	cost = Column(Integer)
 
-	groups = relationship('Group')
-	prerequisites = relationship('Course')
+	_groups = relationship('Group')
+	_prerequisites = relationship('Course')
 
 	def __init__(
 		self, 
@@ -98,13 +98,13 @@ class Course(Base):
 		return f'Course(title={self.title}, summer={self.summer}, took={self.took})'
 
 
-class Semester:
+class Semester(Base):
 	__tablename__ = 'semesters'
 
 	id = Column(Integer, primary_key=True)
 	degree_id = Column(Integer, ForeignKey('degrees.id'))
 
-	courses = relationship('Course')
+	_courses = relationship('Course')
 
 	number = Column(Integer)
 	summer = Column(Boolean)
@@ -160,8 +160,8 @@ class Semester:
 		raise ValueError('+ self.summer must be True if the given courses are summer courses, and the opposite!')
 
 	def take(self):
-		for c in self.courses:
-			c.took = True
+		for x in self.courses:
+			x.took = True
 
 	@classmethod
 	def recommend(
@@ -204,10 +204,21 @@ class Semester:
 				if f[1]:
 					initial = func(initial, f[0], f[1], *args, **kwargs)
 
-		from courses import COURSES 
+		from courses import COURSES
+		from sqlalchemy import create_engine
+		from sqlalchemy.orm import sessionmaker
+
+		engine = create_engine('sqlite:///seamester.db')
+		Base.metadata.create_all(engine)
+
+		Session = sessionmaker(bind=engine)
+		session = Session()
+		session.add_all(COURSES)
+
 		degree_treshold = degree_treshold if degree_treshold else []
-		current_courses = self.courses # IMPLEMENT: COURSES should be equal to the courses that exist in the DB with their own parameters.
-							 # recommendation based on past courses and more.
+		current_courses = session.query(Course).all()
+		session.close()
+
 		# n_points & n_musts filter
 		n_filter = filter(lambda comb: n_recommender(comb, 'points', sum) <= n_points, current_courses) if n_points else current_courses
 		n_filter = filter(lambda comb: n_recommender(comb, 'must', len) >= n_musts, n_filter) if n_musts else n_filter
@@ -227,13 +238,13 @@ class Semester:
 		return np.array(list(current_courses))
 
 
-class Degree:
+class Degree(Base):
 	__tablename__ = 'degrees'
 
 	id = Column(Integer, primary_key=True)
 	title = Column(String)
 
-	semesters = relationship('Semester')
+	_semesters = relationship('Semester')
 
 	def __init__(self, 
 		title: str,
@@ -245,15 +256,17 @@ class Degree:
 	@property
 	def courses(self):
 		# check: if can query the DB in other way. 
+		from courses import COURSES
 		from sqlalchemy import create_engine
 		from sqlalchemy.orm import sessionmaker
 
-		engine = create_engine(f'sqlite:///{self.title}.db')
+		engine = create_engine(f'sqlite:///seamester.db')
 		Base.metadata.create_all(engine)
 
 		Session = sessionmaker(bind=engine)
 		session = Session()
-		return session.query(Course).filter(Course.degree == self.title).all()
+		session.add_all(COURSES)
+		return np.array(session.query(Course).filter(Course.degree == self.title).all())
 
 	def recommend(self, 
 		n_semesters: int, 
