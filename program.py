@@ -7,10 +7,24 @@ from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from collections.abc import Iterable
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 # to display each course/semester/
 # the .exe file can read a DB file that will contain the courses, such that the user will have to download the DB only.
 
 Base = declarative_base()
+engine = create_engine(f'sqlite:///seamester.db')
+
+Base.metadata.create_all(engine)
+Session = sessionmaker(bind=engine)
+session = Session()
+
+def populate():
+	from groups import GROUPS
+	from courses import COURSES
+
+	session.add_all(GROUPS + COURSES)
+
 
 
 class Group(Base):
@@ -97,6 +111,8 @@ class Course(Base):
 	def __repr__(self):
 		return f'Course(title={self.title}, summer={self.summer}, took={self.took})'
 
+	def __enter__(self): pass
+
 
 class Semester(Base):
 	__tablename__ = 'semesters'
@@ -104,10 +120,10 @@ class Semester(Base):
 	id = Column(Integer, primary_key=True)
 	degree_id = Column(Integer, ForeignKey('degrees.id'))
 
-	_courses = relationship('Course')
-
 	number = Column(Integer)
 	summer = Column(Boolean)
+
+	_courses = relationship('Course')
 
 	def __init__(
 		self, 
@@ -204,20 +220,8 @@ class Semester(Base):
 				if f[1]:
 					initial = func(initial, f[0], f[1], *args, **kwargs)
 
-		from courses import COURSES
-		from sqlalchemy import create_engine
-		from sqlalchemy.orm import sessionmaker
-
-		engine = create_engine('sqlite:///seamester.db')
-		Base.metadata.create_all(engine)
-
-		Session = sessionmaker(bind=engine)
-		session = Session()
-		session.add_all(COURSES)
-
 		degree_treshold = degree_treshold if degree_treshold else []
 		current_courses = session.query(Course).all()
-		session.close()
 
 		# n_points & n_musts filter
 		n_filter = filter(lambda comb: n_recommender(comb, 'points', sum) <= n_points, current_courses) if n_points else current_courses
@@ -251,21 +255,10 @@ class Degree(Base):
 		semesters: Iterable[Semester] = None) -> None:
 
 		self.title = title
-		self.semesters = semesters if semesters is True else []
+		self.semesters = semesters if semesters else []
 
 	@property
 	def courses(self):
-		# check: if can query the DB in other way. 
-		from courses import COURSES
-		from sqlalchemy import create_engine
-		from sqlalchemy.orm import sessionmaker
-
-		engine = create_engine(f'sqlite:///seamester.db')
-		Base.metadata.create_all(engine)
-
-		Session = sessionmaker(bind=engine)
-		session = Session()
-		session.add_all(COURSES)
 		return np.array(session.query(Course).filter(Course.degree == self.title).all())
 
 	def recommend(self, 
@@ -292,3 +285,6 @@ class Degree(Base):
 		
 		'''
 		pass
+
+
+populate()
