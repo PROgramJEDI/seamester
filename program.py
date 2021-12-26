@@ -207,7 +207,6 @@ class Semester(Base):
 			courses, what is the combination that it's average is 5?
 			[3, 7, 5, 5] / 4 = 5, ... -> avg * len(total_number_of_courses) - sum_of_given_difficulties = 
 			'''
-
 			from itertools import combinations
 			sigma = average * (len(self.courses) + n_courses) - sum(map(lambda x: x.__dict__[prop], iterable))
 			
@@ -235,14 +234,14 @@ class Semester(Base):
 		# treshold filter
 		tresh_filter = n_filter
 		treshs = [('difficulty', difficulty_treshold), ('cost', cost_treshold)]
-		filters_func(treshs, treshold_recommender, tresh_filter)
+		tresh_filter = filters_func(treshs, treshold_recommender, tresh_filter)
 
 		# verify that all the prerequisites are fulfilled.
-		current_courses = filter(lambda course: self._fulfilled_prerequisites(course.prerequisites), tresh_filter)
+		current_courses = filter(lambda course: Semester._fulfilled_prerequisites(course.prerequisites), tresh_filter)
 
 		# average filter
 		filters = [('difficulty', avg_difficulty), ('cost', avg_cost)]
-		filters_func(filters, avg_recommender, current_courses, n_courses)
+		current_courses = filters_func(filters, avg_recommender, current_courses, n_courses)
 		
 		return np.array(list(current_courses))
 
