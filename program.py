@@ -2,7 +2,7 @@ import itertools
 import numpy as np
 import pandas as pd
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Callable
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from collections.abc import Iterable
@@ -24,6 +24,7 @@ def populate():
 
 	session.add_all(GROUPS + COURSES)
 	session.commit()
+
 
 class Group(Base):
 	__tablename__ = 'groups'
@@ -106,7 +107,7 @@ class Course(Base):
 		self.groups = groups if groups else []
 		self.prerequisites = prerequisites if prerequisites else []
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		return f'Course(title={self.title}, summer={self.summer}, took={self.took})'
 
 	def __enter__(self): pass
@@ -135,7 +136,7 @@ class Semester(Base):
 		if check: 
 			self.courses; self.summer
 
-	def __repr__(self):
+	def __repr__(self) -> str:
 		f = lambda course: {
 				'Title': course.title,
 				'Summer': course.summer,
@@ -143,20 +144,20 @@ class Semester(Base):
 			}
 		return pd.DataFrame.from_records(f(x) for x in self.courses).to_string()
 
-	def __getitem__(self, index):
+	def __getitem__(self, index: int) -> Course:
 		return self.courses[index]
 
-	def _courses_types(self):
+	def _courses_types(self) -> tuple:
 		is_summer, is_summer2 = itertools.tee(map(lambda x: x.summer, self._courses), 2)
 		return (all(is_summer), not any(is_summer2))
 
-	def _are_valid_courses(self):
+	def _are_valid_courses(self) -> bool:
 		f = self._courses_types()
 		return (f[0] or f[1]) and \
 		all(map(lambda course: Semester._fulfilled_prerequisites(course.prerequisites), self._courses))
 
 	@staticmethod
-	def _fulfilled_prerequisites(courses):
+	def _fulfilled_prerequisites(courses) -> Iterable[bool]:
 		return all(map(lambda course: course.took, courses))
 
 	@property
@@ -172,7 +173,7 @@ class Semester(Base):
 			return self._summer
 		raise ValueError('+ self.summer must be True if the given courses are summer courses, and the opposite!')
 
-	def take(self):
+	def take(self) -> None:
 		numbers = [x.number for x in self.courses]
 		with Session() as session:
 			course_query = session.query(Course).filter(Course.number.in_(numbers))
@@ -187,17 +188,17 @@ class Semester(Base):
 		n_points: int = None,
 		n_musts: int = None,
 		
-		avg_difficulty: float = None, # selection based on an diff average difficulty.
+		avg_difficulty: float = None,
 		avg_cost: float = None,
 		
 		difficulty_treshold: float = None,
 		cost_treshold: float = None,
-		degree_treshold: Iterable[str] = None): # selection based on a diff treshold for each course.
+		degree_treshold: Iterable[str] = None) -> Iterable[Iterable[Course]]:
 
-		def n_recommender(iterable, prop, func):
+		def n_recommender(iterable: Iterable, prop: str, func: Callable):
 			return func([x.__dict__[prop] for x in iterable])
 
-		def treshold_recommender(iterable, prop, tresh):
+		def treshold_recommender(iterable: Iterable, prop: str, tresh: Iterable) -> Iterable:
 			return filter(lambda x: x.__dict__[prop] <= tresh, iterable)
 
 		def avg_recommender(iterable: Iterable, prop: str, average: float, n_courses: int):
@@ -216,16 +217,17 @@ class Semester(Base):
 			# verifies that the recommended course are not self.took=True in the DB.
 			return filter(lambda comb: not any(map(lambda course: course.took, comb)), combinations(courses, n_courses))			
 
-		def filters_func(filters, func, initial, *args, **kwargs):
+		def filters_func(filters: Iterable[tuple], func: Callable, initial: object, *args, **kwargs) -> object:
 			for f in filters:
 				if f[1]:
 					initial = func(initial, f[0], f[1], *args, **kwargs)
+			return initial
 
 		degree_treshold = degree_treshold if degree_treshold else []
 		
-		session = Session()
-		current_courses = session.query(Course).all()
-		session.close()
+		with Session() as session:
+			current_courses = session.query(Course).all()
+
 		# n_points & n_musts filter
 		n_filter = filter(lambda comb: n_recommender(comb, 'points', sum) <= n_points, current_courses) if n_points else current_courses
 		n_filter = filter(lambda comb: n_recommender(comb, 'must', len) >= n_musts, n_filter) if n_musts else n_filter
@@ -262,8 +264,9 @@ class Degree(Base):
 
 	@property
 	def courses(self):
-		session = Session()
-		return np.array(session.query(Course).filter(Course.degree == self.title).all())
+		with Session() as session:
+			res = np.array(session.query(Course).filter(Course.degree == self.title).all())
+		return res
 
 	def recommend(self, 
 		n_semesters: int, 
