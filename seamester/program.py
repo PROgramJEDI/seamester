@@ -290,9 +290,8 @@ class Degree(Base):
 Base.metadata.create_all(engine)
 
 def populate():
-	from groups import GROUPS
-	from courses import COURSES
-
+	from objects import COURSES, GROUPS
+	
 	with Session() as session:
 		session.add_all(GROUPS + COURSES)
 		session.commit()
