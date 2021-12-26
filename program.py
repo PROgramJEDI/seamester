@@ -13,19 +13,17 @@ from sqlalchemy.orm import sessionmaker
 # the .exe file can read a DB file that will contain the courses, such that the user will have to download the DB only.
 
 Base = declarative_base()
-engine = create_engine(f'sqlite:///seamester.db')
+engine = create_engine('sqlite:///seamester.db')
 
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
-session = Session()
 
 def populate():
 	from groups import GROUPS
 	from courses import COURSES
 
 	session.add_all(GROUPS + COURSES)
-
-
+	session.commit()
 
 class Group(Base):
 	__tablename__ = 'groups'
@@ -58,7 +56,7 @@ class Course(Base):
 	parent_id = Column(Integer, ForeignKey('courses.id'))
 	semester_id = Column(Integer, ForeignKey('semesters.id'))
 
-	number = Column(Integer)
+	number = Column(Integer, unique=True)
 	title = Column(String)
 	description = Column(String)
 	degree = Column(String)
@@ -120,7 +118,7 @@ class Semester(Base):
 	id = Column(Integer, primary_key=True)
 	degree_id = Column(Integer, ForeignKey('degrees.id'))
 
-	number = Column(Integer)
+	number = Column(Integer, unique=True)
 	summer = Column(Boolean)
 
 	_courses = relationship('Course')
@@ -141,7 +139,6 @@ class Semester(Base):
 		f = lambda course: {
 				'Title': course.title,
 				'Summer': course.summer,
-				'Took': course.took,
 				'Difficulty': course.difficulty
 			}
 		return pd.DataFrame.from_records(f(x) for x in self.courses).to_string()
@@ -176,8 +173,12 @@ class Semester(Base):
 		raise ValueError('+ self.summer must be True if the given courses are summer courses, and the opposite!')
 
 	def take(self):
-		for x in self.courses:
-			x.took = True
+		numbers = [x.number for x in self.courses]
+		with Session() as session:
+			course_query = session.query(Course).filter(Course.number.in_(numbers))
+			course_query.took = True
+			session.commit()
+
 
 	@classmethod
 	def recommend(
@@ -221,8 +222,10 @@ class Semester(Base):
 					initial = func(initial, f[0], f[1], *args, **kwargs)
 
 		degree_treshold = degree_treshold if degree_treshold else []
+		
+		session = Session()
 		current_courses = session.query(Course).all()
-
+		session.close()
 		# n_points & n_musts filter
 		n_filter = filter(lambda comb: n_recommender(comb, 'points', sum) <= n_points, current_courses) if n_points else current_courses
 		n_filter = filter(lambda comb: n_recommender(comb, 'must', len) >= n_musts, n_filter) if n_musts else n_filter
@@ -259,6 +262,7 @@ class Degree(Base):
 
 	@property
 	def courses(self):
+		session = Session()
 		return np.array(session.query(Course).filter(Course.degree == self.title).all())
 
 	def recommend(self, 
@@ -287,4 +291,4 @@ class Degree(Base):
 		pass
 
 
-populate()
+engine.dispose()
