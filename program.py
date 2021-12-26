@@ -214,7 +214,10 @@ class Semester(Base):
 			courses = filter(lambda x: x.degree in degree_treshold, iterable) if len(degree_treshold) >= 1 else iterable
 			
 			# verifies that the recommended course are not self.took=True in the DB.
-			return filter(lambda comb: not any(map(lambda course: course.took, comb)), combinations(courses, n_courses))			
+			courses = filter(lambda x: not x.took, courses)
+			
+			# checks if the sum of the recommendations is below sigma.
+			return filter(lambda comb: sum(comb) <= sigma, combinations(courses, n_courses))
 
 		def filters_func(filters: Iterable[tuple], func: Callable, initial: object, *args, **kwargs) -> object:
 			for f in filters:
