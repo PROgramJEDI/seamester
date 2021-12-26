@@ -1,4 +1,4 @@
-# seamester
+# Seamester📖
 
 ## Installation
 In order to install Seamester📖, you must first install Python and the 'pip' package manager. Right after, you can type the following command, corresponding to your operating system:
@@ -12,7 +12,7 @@ The core of the Seamester📖 library, is the Course class. The course class con
 >>> from seamester.courses import COURSES
 >>> mycourses = [41542, 41531] # the courses we know we'll take this semester.
 >>> semester = Semester([course for course in COURSES if course.number in mycourses], summer=False)
->>> semester.recommend(2, avg_difficulty=6.5) # a recommendation of 2 more 
+>>> semester.recommend(2, avg_difficulty=6.5, degree_treshold=['computer-science']) # a recommendation of 2 more 
                                               # courses based on an average difficulty of 6.5 or less.
 
 ```
