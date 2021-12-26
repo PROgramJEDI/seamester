@@ -15,16 +15,8 @@ from sqlalchemy.orm import sessionmaker
 Base = declarative_base()
 engine = create_engine('sqlite:///seamester.db')
 
-Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
 
-def populate():
-	from groups import GROUPS
-	from courses import COURSES
-
-	with Session() as session:
-		session.add_all(GROUPS + COURSES)
-		session.commit()
 
 
 class Group(Base):
@@ -166,7 +158,7 @@ class Semester(Base):
 		if self._are_valid_courses():
 			return np.array(self._courses)
 		raise ValueError('+ All the given courses must be of the same semester type (summer / not summer)!')
-			
+
 	@property
 	def summer(self):
 		f = self._courses_types()
@@ -181,8 +173,6 @@ class Semester(Base):
 			course_query.took = True
 			session.commit()
 
-
-	@classmethod
 	def recommend(
 		self, 
 		n_courses: int, 
@@ -296,5 +286,15 @@ class Degree(Base):
 		'''
 		pass
 
+
+Base.metadata.create_all(engine)
+
+def populate():
+	from groups import GROUPS
+	from courses import COURSES
+
+	with Session() as session:
+		session.add_all(GROUPS + COURSES)
+		session.commit()
 
 engine.dispose()
