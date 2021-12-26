@@ -22,8 +22,9 @@ def populate():
 	from groups import GROUPS
 	from courses import COURSES
 
-	session.add_all(GROUPS + COURSES)
-	session.commit()
+	with Session() as session:
+		session.add_all(GROUPS + COURSES)
+		session.commit()
 
 
 class Group(Base):
