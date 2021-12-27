@@ -24,25 +24,25 @@ Seamester📖 provides you with the most simple way to add courses to the librar
 ```python 
 >>> linear_algebra_2 = Course(...)
 ```
-4. Add the Course object to its prerequisites list: 
+3. Add the Course object to its prerequisites list: 
 ```python
->>> linear_algebra_2.prerequisites = [linear_algebra_2, java_programming_2]
+>>> linear_algebra_2.prerequisites = [linear_algebra_1, java_programming_2]
 ```
-8. Add the Course object to the ```COURSES``` list: 
+4. Add the Course object to the ```COURSES``` list: 
 ```python
->>> COURSES = [linear_algebra_2, ...]
+>>> COURSES = [..., linear_algebra_2]
 ```
 
 1. Navigate to ```objects.py```.
-3. Create a ```Group``` object in the right location:
+2. Create a ```Group``` object in the right location:
 ```python
 >>> linear_algebra_2_discord = Group(...)
 ```
-5. Add the Group object to the groups list of the course: 
+3. Add the Group object to the groups list of the course: 
 ```python
 >>> linear_algebra_2.groups = [linear_algebra_2_discord, linear_algebra_2_whatsapp]
 ```
-7. Add the Group object to the ```GROUPS``` list: 
+4. Add the Group object to the ```GROUPS``` list: 
 ```python
 >>> GROUPS = [linear_algebra_2_discord, ...]
 ```
