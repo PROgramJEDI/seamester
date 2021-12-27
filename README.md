@@ -17,7 +17,7 @@ The core of the Seamester📖 library, is the Course class. The course class con
 
 ```
 
-## Add Groups & Courses
+## Add a New Course
 Seamester📖 provides you with the most simple way to add courses to the library. All you need in order to do so, is to create a new Group/Course object in their corresponding  file, and add them to the lists:
 1. Navigate to ```objects.py```.
 2. Create a ```Course``` object in the right location: 
@@ -33,6 +33,7 @@ Seamester📖 provides you with the most simple way to add courses to the librar
 >>> COURSES = [..., linear_algebra_2]
 ```
 
+## Add a New Group
 1. Navigate to ```objects.py```.
 2. Create a ```Group``` object in the right location:
 ```python
